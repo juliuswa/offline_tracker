@@ -22,7 +22,7 @@ void loop() {
 
   Serial.print(ampere_msrs[ampere_index]);
   Serial.print(",");
-  Serial.print(get_average_ampere());
+  Serial.println(get_average_ampere());
 
   delay(100);
 }
