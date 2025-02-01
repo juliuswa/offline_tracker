@@ -1,26 +1,34 @@
 // Define the LED pin.  The Nano 33 IoT often uses pin 13 for the built-in LED.
 const int ledPin = 13;
 const int amperePIN = A1; 
+const int StatusLedRot = A2;
+const int StatusLedGrun = A3;
 
-const float sensivity = 100;
+const float sensivity = 10000;
 
 const int ampere_msr_cnt = 10;
 int ampere_index = 0;
 float ampere_msrs[ampere_msr_cnt] = {};
 
-float offsetAmpere = 1.61;
+float offsetAmpere = 2.51;
 
 void setup() {
   Serial.begin(9600);
   
   pinMode(ledPin, OUTPUT);
   pinMode(amperePIN, INPUT);
+  pinMode(StatusLedRot, INPUT);
+  pinMode(StatusLedGrun, INPUT);
 }
 
 void loop() {
   get_ampere_measurement();
 
   Serial.print(ampere_msrs[ampere_index]);
+  Serial.print(",");
+  Serial.print(analogRead(StatusLedRot));
+  Serial.print(",");
+  Serial.print(analogRead(StatusLedGrun));
   Serial.print(",");
   Serial.println(get_average_ampere());
 
@@ -32,7 +40,7 @@ float get_ampere_measurement() {
 
   float ampereState = analogRead(amperePIN);
   float voltage = (ampereState * 5.0) / 1023.0;
-  float current = (voltage - offsetAmpere) * sensivity;
+  float current = (voltage - offsetAmpere) * (sensivity);
   
   ampere_msrs[ampere_index] = current;
 }
