@@ -1,72 +1,47 @@
 // Define the LED pin.  The Nano 33 IoT often uses pin 13 for the built-in LED.
 const int ledPin = 13;
-const int kapazPIN = 7;
-const int induktPIN = 8;
 const int amperePIN = A1; 
 
 const float sensivity = 100;
 
-float offsetAmpere = 1.61;
+const int ampere_msr_cnt = 10;
 int ampere_index = 0;
-float ampere_measurements[] = {0.0, 0.0, 0.0};
+float ampere_msrs[ampere_msr_cnt] = {};
+
+float offsetAmpere = 1.61;
 
 void setup() {
-  // Initialize the LED pin as an output.
   Serial.begin(9600);
   
   pinMode(ledPin, OUTPUT);
-  pinMode(induktPIN, INPUT);
-  pinMode(kapazPIN, INPUT);
   pinMode(amperePIN, INPUT);
 }
 
 void loop() {
-  int kapazState = digitalRead(kapazPIN);
-  int induktState = digitalRead(induktPIN);
+  get_ampere_measurement();
 
-  ampere_measurements[ampere_index] =  analogRead(amperePIN);
-  
-  float average_ampere = get_average_ampere();
-
-  // if(kapazState == HIGH){
-  //   Serial.println("Kapaz erkannt");
-  // } else{
-  //   Serial.println("keine Kapaz erkannt");
-  // }
-
-  // if(induktState == LOW){
-  //   Serial.println("indukt erkannt");
-  // } else{
-  //   Serial.println("keine Indukt erkannt");
-  // }
-
-  Serial.println(average_ampere);
-  digitalWrite(ledPin,HIGH);
+  Serial.print(ampere_msrs[ampere_index]);
+  Serial.print(",");
+  Serial.print(get_average_ampere());
 
   delay(100);
-
-// // Turn the LED on.
-//   digitalWrite(ledPin, HIGH);  // HIGH means on for most LEDs
-//   delay(300);                  // Wait for one second.
-//   // Turn the LED off.
-//   digitalWrite(ledPin, LOW);   // LOW means off for most LEDs
-//   delay(300);                  // Wait for one second.
 }
 
 float get_ampere_measurement() {  
+  ampere_index = (ampere_index + 1) % ampere_msr_cnt;
+
   float ampereState = analogRead(amperePIN);
   float voltage = (ampereState * 5.0) / 1023.0;
   float current = (voltage - offsetAmpere) * sensivity;
-  ampere_measurements[ampere_index] = current;
-
-  ampere_index = (ampere_index++) % 3;
+  
+  ampere_msrs[ampere_index] = current;
 }
 
 float get_average_ampere() {
   float avr = 0;
 
-  for (int i = 0; i < 3; i++) {
-    avr += ampere_measurements[i] / 3.0;
+  for (int i = 0; i < ampere_msr_cnt; i++) {
+    avr += ampere_msrs[i] / static_cast<float>(ampere_msr_cnt);
   }
 
   return avr;
