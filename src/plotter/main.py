@@ -2,52 +2,20 @@ import serial
 import time 
 import tkinter as tk   
 import cv2
+from state_machine import StateMachine
 
 LED_HIGH = 400.0
-AMPERE_HIGH = 150.0
+AMPERE_HIGH = 516.0
+AMPERE_LOW = 514.0
 
 arduino = serial.Serial(port='/dev/ttyACM0', baudrate=9600, timeout=.1) 
 
-# 0: kein phone
-# 1: phone abgelegt
-# 2: phone da
-# 3: phone weggenommen
-
-state = 0
-
-state_transitions = {
-    0: {
-        "HG" : 2,
-        "HR" : 0,
-        "LG" : 1,
-        "LR" : 0
-    },
-    1: {
-        "HG" : 2,
-        "HR" : 0,
-        "LG" : 1,
-        "LR" : 0
-    },
-    2: {
-        "HG" : 2,
-        "HR" : 0,
-        "LG" : 3,
-        "LR" : 0
-    },
-    3: {
-        "HG" : 2,
-        "HR" : 0,
-        "LG" : 3,
-        "LR" : 0
-    }
-}
-
 video_paths = {
-    "intro": "videos/offline/Offline Intro V1.mp4",
-    "online": "videos/offline/Back Online.mp4",
+    "offline": "videos/offline/Offline Intro V1.mp4",
+    "online": "videos/offline/Back Online V2.mp4",
 }
 
-current_state = "intro"
+current_state = "offline"
 cap = cv2.VideoCapture(video_paths[current_state])
 
 if not cap.isOpened():
@@ -55,6 +23,9 @@ if not cap.isOpened():
     exit(1)
 
 cv2.namedWindow("Video Window")
+
+state_machine = StateMachine()
+last_ampere = "H"
 
 while True: 
     ret, frame = cap.read()
@@ -67,7 +38,6 @@ while True:
     key = cv2.waitKey(30) & 0xFF
     if key == ord('q'):
         break
-
 
     value = arduino.readline().decode("utf-8")
     print(value)
@@ -86,31 +56,28 @@ while True:
 
     if ampere > AMPERE_HIGH: 
         signal += "H"
-    else:
+        last_ampere = "H"
+    elif ampere < AMPERE_LOW:
         signal += "L"
+        last_ampere = "L"
+    else:
+        signal = last_ampere
 
     if green_led > LED_HIGH: 
         signal += "G"
     else:
         signal += "R"
 
-    state = state_transitions[state][signal]
-    
-    if state == 0:
-        print("kein handy")
-    elif state == 1:
-        print("handy gelegt")
-    elif state == 2:
-        print("handy da")
-    elif state == 3:
-        print("handy genommen")
+    print(signal)
+    state_machine.transition(signal)
+    print(state_machine.get_current_state())
 
     new_state = ""
-    if (state == 0 or state == 3):
+    if (state_machine.current_state == 0 or state_machine.current_state  == 3):
         new_state = "online"
     
     else :
-        new_state = "intro"
+        new_state = "offline"
 
     if new_state == current_state :
         continue

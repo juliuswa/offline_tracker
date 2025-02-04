@@ -32,5 +32,5 @@ float get_ampere_measurement() {
   float voltage = (ampereState * 5.0) / 1023.0;
   float current = (voltage - offsetAmpere) * (sensivity);
 
-  return current;
+  return ampereState;
 }
